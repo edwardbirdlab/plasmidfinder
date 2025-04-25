@@ -2,7 +2,7 @@ FROM debian:bullseye
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
+# Install system packages
 RUN apt-get update -qq && \
     apt-get install -y -qq \
         git \
@@ -25,19 +25,26 @@ RUN git clone --branch 1.0.1 --depth 1 https://bitbucket.org/genomicepidemiology
     cd kma && make && \
     mv kma* /bin/
 
-# Add your script
+# Install PlasmidFinder database
+RUN mkdir -p /plasmidfinder_db && \
+    cd /plasmidfinder_db && \
+    git clone --branch develop https://bitbucket.org/genomicepidemiology/plasmidfinder_db.git . && \
+    python3 INSTALL.py kma_index
+
+# Optional: expose DB path to your script
+ENV PLASMID_DB=/plasmidfinder_db
+
+# Copy main script
 COPY plasmidfinder.py /usr/src/plasmidfinder.py
 RUN chmod 755 /usr/src/plasmidfinder.py
 
 # Test setup
-RUN mkdir /database /test
+RUN mkdir -p /database /test
 COPY test/database/ /database/
 COPY test/test* /test/
 RUN chmod 755 /test/test.sh
 
-ENV PATH="$PATH:/usr/src"
-
-# Bash aliases
+# Bash aliases for debugging (optional)
 RUN echo "\
 alias ls='ls -h --color=tty'\n\
 alias ll='ls -lrt'\n\
@@ -48,5 +55,8 @@ alias cwd='readlink -f .'\n\
 
 WORKDIR /workdir
 
-# Entrypoint
+# Add script directory to PATH
+ENV PATH="$PATH:/usr/src"
+
+# Run your tool by default
 ENTRYPOINT ["/usr/src/plasmidfinder.py"]
