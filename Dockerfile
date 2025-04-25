@@ -1,8 +1,8 @@
-FROM debian:stretch
+FROM debian:bullseye
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update -qq && \
     apt-get install -y -qq \
         git \
@@ -20,15 +20,16 @@ ENV DEBIAN_FRONTEND=teletype
 # Install Python packages
 RUN pip3 install -U biopython==1.73 tabulate cgecore
 
-# Install kma
+# Install KMA
 RUN git clone --branch 1.0.1 --depth 1 https://bitbucket.org/genomicepidemiology/kma.git && \
     cd kma && make && \
     mv kma* /bin/
 
-# Copy main script and test files
+# Add your script
 COPY plasmidfinder.py /usr/src/plasmidfinder.py
 RUN chmod 755 /usr/src/plasmidfinder.py
 
+# Test setup
 RUN mkdir /database /test
 COPY test/database/ /database/
 COPY test/test* /test/
@@ -36,7 +37,7 @@ RUN chmod 755 /test/test.sh
 
 ENV PATH="$PATH:/usr/src"
 
-# Bash aliases for convenience
+# Bash aliases
 RUN echo "\
 alias ls='ls -h --color=tty'\n\
 alias ll='ls -lrt'\n\
@@ -47,5 +48,5 @@ alias cwd='readlink -f .'\n\
 
 WORKDIR /workdir
 
-# Set entrypoint
+# Entrypoint
 ENTRYPOINT ["/usr/src/plasmidfinder.py"]
