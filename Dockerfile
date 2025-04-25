@@ -1,50 +1,51 @@
 FROM debian:stretch
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
-### RUN set -ex; \
+# Install dependencies
+RUN apt-get update -qq && \
+    apt-get install -y -qq \
+        git \
+        apt-utils \
+        wget \
+        python3 \
+        python3-pip \
+        python3-setuptools \
+        ncbi-blast+ \
+        libz-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update -qq; \
-    apt-get install -y -qq git \
-    apt-utils \
-    wget \
-    python3-pip \
-    ncbi-blast+ \
-    libz-dev \
-    ; \
-    rm -rf /var/cache/apt/* /var/lib/apt/lists/*;
+ENV DEBIAN_FRONTEND=teletype
 
-ENV DEBIAN_FRONTEND Teletype
-
-# Install python dependencies
-RUN pip3 install -U biopython==1.73 tabulate cgecore;
+# Install Python packages
+RUN pip3 install -U biopython==1.73 tabulate cgecore
 
 # Install kma
-RUN git clone --branch 1.0.1 --depth 1 https://bitbucket.org/genomicepidemiology/kma.git; \
-    cd kma && make; \
+RUN git clone --branch 1.0.1 --depth 1 https://bitbucket.org/genomicepidemiology/kma.git && \
+    cd kma && make && \
     mv kma* /bin/
 
+# Copy main script and test files
 COPY plasmidfinder.py /usr/src/plasmidfinder.py
+RUN chmod 755 /usr/src/plasmidfinder.py
 
-# TEST setup
 RUN mkdir /database /test
 COPY test/database/ /database/
-COPY test/test* test/
-COPY plasmidfinder.py /usr/src/plasmidfinder.py
+COPY test/test* /test/
+RUN chmod 755 /test/test.sh
 
-RUN chmod 755 /usr/src/plasmidfinder.py; \
-    chmod 755 test/test.sh
+ENV PATH="$PATH:/usr/src"
 
-ENV PATH $PATH:/usr/src
-# Setup .bashrc file for convenience during debugging
-RUN echo "alias ls='ls -h --color=tty'\n"\
-"alias ll='ls -lrt'\n"\
-"alias l='less'\n"\
-"alias du='du -hP --max-depth=1'\n"\
-"alias cwd='readlink -f .'\n"\
-"PATH=$PATH\n">> ~/.bashrc
+# Bash aliases for convenience
+RUN echo "\
+alias ls='ls -h --color=tty'\n\
+alias ll='ls -lrt'\n\
+alias l='less'\n\
+alias du='du -hP --max-depth=1'\n\
+alias cwd='readlink -f .'\n\
+" >> ~/.bashrc
 
 WORKDIR /workdir
 
-# Execute program when running the container
+# Set entrypoint
 ENTRYPOINT ["/usr/src/plasmidfinder.py"]
