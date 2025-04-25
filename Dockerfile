@@ -28,7 +28,7 @@ RUN git clone --branch 1.0.1 --depth 1 https://bitbucket.org/genomicepidemiology
 # Install PlasmidFinder database
 RUN mkdir -p /plasmidfinder_db && \
     cd /plasmidfinder_db && \
-    git clone --branch develop https://bitbucket.org/genomicepidemiology/plasmidfinder_db.git . && \
+    git clone https://bitbucket.org/genomicepidemiology/plasmidfinder_db.git . && \
     python3 INSTALL.py kma_index
 
 # Optional: expose DB path to your script
